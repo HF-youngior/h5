@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>北京交通大学130周年校庆 - 专属头像制作</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #c53030 0%, #742a2a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #1a365d;
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        .avatar-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 30px;
+            border: 3px solid #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        #avatarCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        .frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        .frame-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #4299e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            color: #4299e1;
+            transition: all 0.3s ease;
+        }
+        .frame-btn:hover {
+            background: white;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .frame-btn.left {
+            left: -20px;
+        }
+        .frame-btn.right {
+            right: -20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            margin: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+        .btn-secondary:hover {
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        .hidden {
+            display: none;
+        }
+        #fileInput {
+            display: none;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            font-size: 18px;
+        }
+        .frame-indicator {
+            margin: 20px 0;
+            font-size: 14px;
+            color: #718096;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>北京交通大学130周年校庆</h1>
+        <h2 style="color: #4a5568; font-size: 18px; margin-bottom: 30px;">专属头像制作</h2>
+        
+        <div class="avatar-container">
+            <canvas id="avatarCanvas" width="280" height="280"></canvas>
+            <div class="frame-overlay">
+                <img id="frameImage" src="" alt="头像框" style="width: 100%; height: 100%;">
+            </div>
+            <div class="frame-btn left" onclick="changeFrame(-1)">&lt;</div>
+            <div class="frame-btn right" onclick="changeFrame(1)">&gt;</div>
+        </div>
+        
+        <div class="frame-indicator">
+            头像框 <span id="frameIndex">1</span>/<span id="frameTotal">6</span>
+        </div>
+        
+        <div>
+            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">上传图片</button>
+            <button class="btn btn-primary" onclick="saveImage()">保存头像</button>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)">
+        
+        <div class="footer">
+            北京交通大学130周年校庆 © 2026
+        </div>
+    </div>
+    
+    <div id="loading" class="loading hidden">处理中...</div>
+    
+    <script>
+        const canvas = document.getElementById('avatarCanvas');
+        const ctx = canvas.getContext('2d');
+        const frameImage = document.getElementById('frameImage');
+        const frameIndexEl = document.getElementById('frameIndex');
+        const frameTotalEl = document.getElementById('frameTotal');
+        const loading = document.getElementById('loading');
+        
+        let currentFrame = 0;
+        const frameImages = [
+            '../mxs90_sharing/images/ah1.png',
+            '../mxs90_sharing/images/ah2.png',
+            '../mxs90_sharing/images/ah3.png',
+            '../mxs90_sharing/images/ah4.png',
+            '../mxs90_sharing/images/ah5.png',
+            '../mxs90_sharing/images/ah6.png'
+        ];
+        
+        let userImage = null;
+        
+        // 初始化
+        function init() {
+            frameTotalEl.textContent = frameImages.length;
+            updateFrame();
+            drawDefaultImage();
+        }
+        
+        // 绘制默认图片
+        function drawDefaultImage() {
+            ctx.fillStyle = '#f7fafc';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('点击上传图片', canvas.width / 2, canvas.height / 2);
+        }
+        
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            loading.classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // 裁剪为正方形
+                    const size = Math.min(img.width, img.height);
+                    const x = (img.width - size) / 2;
+                    const y = (img.height - size) / 2;
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, x, y, size, size, 0, 0, canvas.width, canvas.height);
+                    userImage = img;
+                    loading.classList.add('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 更新头像框
+        function updateFrame() {
+            frameImage.src = frameImages[currentFrame];
+            frameIndexEl.textContent = currentFrame + 1;
+        }
+        
+        // 切换头像框
+        function changeFrame(direction) {
+            currentFrame = (currentFrame + direction + frameImages.length) % frameImages.length;
+            updateFrame();
+        }
+        
+        // 保存图片
+        function saveImage() {
+            if (!userImage) {
+                alert('请先上传图片');
+                return;
+            }
+            
+            loading.classList.remove('hidden');
+            
+            // 创建临时canvas用于合成
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // 绘制用户图片
+            tempCtx.drawImage(canvas, 0, 0);
+            
+            // 绘制头像框
+            const frame = new Image();
+            frame.onload = function() {
+                tempCtx.drawImage(frame, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // 转换为图片并下载
+                const link = document.createElement('a');
+                link.download = 'BJTU_130_avatar.png';
+                link.href = tempCanvas.toDataURL('image/png');
+                link.click();
+                
+                loading.classList.add('hidden');
+            };
+            frame.src = frameImages[currentFrame];
+        }
+        
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
